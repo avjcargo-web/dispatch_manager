@@ -12,6 +12,22 @@ function getRequiredEnv(name) {
   return value;
 }
 
+function getOptionalPort() {
+  const value = process.env.DB_PORT;
+
+  if (!value) {
+    return undefined;
+  }
+
+  const port = Number(value);
+
+  if (Number.isNaN(port)) {
+    throw new Error("Database environment variable DB_PORT must be a number.");
+  }
+
+  return port;
+}
+
 const globalForDb = globalThis;
 
 export function getMissingDatabaseEnvVars() {
@@ -26,6 +42,7 @@ export function getPool() {
   if (!globalForDb.mysqlPool) {
     globalForDb.mysqlPool = mysql.createPool({
       host: getRequiredEnv("DB_HOST"),
+      port: getOptionalPort(),
       user: getRequiredEnv("DB_USER"),
       password: getRequiredEnv("DB_PASSWORD"),
       database: getRequiredEnv("DB_NAME"),
