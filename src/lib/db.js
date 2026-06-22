@@ -1,5 +1,7 @@
 import mysql from "mysql2/promise";
 
+const REQUIRED_DATABASE_ENV_VARS = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
+
 function getRequiredEnv(name) {
   const value = process.env[name];
 
@@ -11,6 +13,14 @@ function getRequiredEnv(name) {
 }
 
 const globalForDb = globalThis;
+
+export function getMissingDatabaseEnvVars() {
+  return REQUIRED_DATABASE_ENV_VARS.filter((name) => !process.env[name]);
+}
+
+export function isDatabaseConfigured() {
+  return getMissingDatabaseEnvVars().length === 0;
+}
 
 export function getPool() {
   if (!globalForDb.mysqlPool) {

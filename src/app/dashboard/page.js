@@ -7,9 +7,11 @@ import {
   Users,
 } from "lucide-react";
 import DispatchStatusBadge from "@/components/dispatch/DispatchStatusBadge";
+import AlertBanner from "@/components/ui/AlertBanner";
 import PageHeader from "@/components/ui/PageHeader";
 import StatCard from "@/components/ui/StatCard";
 import { getDashboardOverview } from "@/lib/dashboard-data";
+import { getMissingDatabaseEnvVars, isDatabaseConfigured } from "@/lib/db";
 
 const statusBarClasses = {
   available: "bg-blue-600",
@@ -18,8 +20,39 @@ const statusBarClasses = {
   maintenance: "bg-red-500",
 };
 
+const emptyOverview = {
+  stats: {
+    totalCustomers: 0,
+    totalDrivers: 0,
+    totalContainers: 0,
+    totalDispatches: 0,
+    pendingDispatches: 0,
+    completedDispatches: 0,
+  },
+  recentDispatches: [],
+  containerStatusSummary: [],
+  driverActivitySummary: [],
+};
+
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
-  const overview = await getDashboardOverview();
+  const missingDbVars = getMissingDatabaseEnvVars();
+  const databaseConfigured = isDatabaseConfigured();
+
+  let overview = emptyOverview;
+  let dashboardErrorMessage = null;
+
+  if (databaseConfigured) {
+    try {
+      overview = await getDashboardOverview();
+    } catch (error) {
+      console.error("Dashboard page data error:", error);
+      dashboardErrorMessage = "The dashboard could not load live database data right now.";
+    }
+  } else {
+    dashboardErrorMessage = `Add these Vercel environment variables to enable live dashboard data: ${missingDbVars.join(", ")}.`;
+  }
 
   const stats = [
     {
@@ -77,6 +110,17 @@ export default async function DashboardPage() {
         title="Dashboard"
         description="Monitor live dispatch counts, recent movements, and fleet activity directly from MySQL-backed operations data."
       />
+
+      {dashboardErrorMessage ? (
+        <AlertBanner
+          type="info"
+          message={
+            databaseConfigured
+              ? dashboardErrorMessage
+              : `Dashboard preview mode is active. ${dashboardErrorMessage}`
+          }
+        />
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {stats.map((stat) => (
